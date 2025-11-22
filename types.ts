@@ -7,6 +7,11 @@ export enum CognitiveLoadState {
   ERROR = 'CIRCUIT_FAILURE',
 }
 
+export enum ApplicationViewMode {
+  SIMULATION = 'ACTIVE_SIMULATION',
+  ANALYSIS = 'POST_MORTEM_DEBRIEF',
+}
+
 export interface RhetoricalImpactFactor {
   clarityScore: number;
   aggressionIndex: number;
@@ -53,6 +58,15 @@ export interface SimulationScenarioMatrix {
   targetRhetoricPattern: string;
   difficultyLevel: 'LOW_YIELD' | 'HIGH_YIELD' | 'HOSTILE_TAKEOVER';
   probabilityManifolds: ProbabilityManifold[];
+}
+
+export interface StrategicAnalysisReport {
+  strengths: { point: string; example: string }[];
+  missedOpportunities: { context: string; betterAlternative: string }[];
+  psychologicalTacticsDetected: { tacticName: string; description: string }[];
+  confidenceTrajectoryAnalysis: string;
+  trainingRecommendations: string[];
+  overallGrade: 'S' | 'A' | 'B' | 'C' | 'F';
 }
 
 export const CircuitBreakerThresholds = {

@@ -3,7 +3,9 @@ import {
   NegotiationEntropyMetric, 
   DialogueTransmissionVector, 
   CognitiveLoadState,
-  SimulationScenarioMatrix
+  SimulationScenarioMatrix,
+  ApplicationViewMode,
+  StrategicAnalysisReport
 } from './types';
 import { 
   computeLevenshteinDeviation, 
@@ -16,6 +18,7 @@ import { GeminiDeepThinkService } from './services/GeminiDeepThinkService';
 import { ScenarioInjectionModule } from './services/ScenarioInjectionModule';
 import { RhetoricDensityVisualizer } from './components/RhetoricDensityVisualizer';
 import { NeuralChatInterface } from './components/NeuralChatInterface';
+import { PostMortemAnalysisView } from './components/PostMortemAnalysisView';
 
 const App: React.FC = () => {
   const apiKey = process.env.API_KEY || '';
@@ -30,6 +33,10 @@ const App: React.FC = () => {
   const [transmissionVectors, setTransmissionVectors] = useState<DialogueTransmissionVector[]>([]);
   const [cognitiveState, setCognitiveState] = useState<CognitiveLoadState>(CognitiveLoadState.IDLE);
   
+  // View State
+  const [viewMode, setViewMode] = useState<ApplicationViewMode>(ApplicationViewMode.SIMULATION);
+  const [analysisReport, setAnalysisReport] = useState<StrategicAnalysisReport | null>(null);
+
   // Acoustic Controls
   const [isAcousticCaptureActive, setIsAcousticCaptureActive] = useState<boolean>(true);
   const [currentSpectralFlux, setCurrentSpectralFlux] = useState<number>(0);
@@ -192,6 +199,35 @@ const App: React.FC = () => {
     }
   };
 
+  // COACH MODE / ANALYSIS TRIGGER
+  const handleTerminateAndAnalyze = async () => {
+    if (!deepThinkServiceRef.current) return;
+    
+    // Sever live connection first
+    if (isConnectionActive) severNeuralLink();
+
+    setCognitiveState(CognitiveLoadState.THINKING);
+    
+    try {
+      const report = await deepThinkServiceRef.current.generateStrategicAnalysis(transmissionVectors, entropyMetrics);
+      setAnalysisReport(report);
+      setViewMode(ApplicationViewMode.ANALYSIS);
+    } catch (e) {
+      console.error(e);
+      // Fallback if analysis fails
+      alert("ANALYSIS_FAILURE: Unable to generate Post-Mortem.");
+    } finally {
+      setCognitiveState(CognitiveLoadState.IDLE);
+    }
+  };
+
+  const handleReset = () => {
+    setViewMode(ApplicationViewMode.SIMULATION);
+    setTransmissionVectors([]);
+    setEntropyMetrics([]);
+    setAnalysisReport(null);
+  };
+
   // Difficulty Color Helper
   const getDifficultyColor = (level: string) => {
     switch(level) {
@@ -201,6 +237,20 @@ const App: React.FC = () => {
     }
   };
 
+  // RENDER: ANALYSIS MODE
+  if (viewMode === ApplicationViewMode.ANALYSIS && analysisReport) {
+    return (
+      <div className="w-screen h-screen bg-obsidian flex flex-col">
+        <PostMortemAnalysisView 
+          report={analysisReport} 
+          metrics={entropyMetrics} 
+          onReset={handleReset} 
+        />
+      </div>
+    );
+  }
+
+  // RENDER: SIMULATION MODE
   return (
     <div className="w-screen h-screen bg-obsidian text-gray-200 flex flex-col overflow-hidden">
       
@@ -262,13 +312,17 @@ const App: React.FC = () => {
              >
                {isConnectionActive ? 'LIVE NEURAL LINK' : 'CONNECT LIVE'}
              </button>
-             
+
+             {/* TERMINATE & ANALYZE BUTTON */}
              <button
-                onClick={toggleSimulationMode}
-                disabled={!isConnectionActive}
-                className={`px-3 py-1 text-xs font-mono border font-bold transition-all ${!isConnectionActive ? 'bg-blue-500/20 text-blue-400 border-blue-500' : 'bg-transparent text-gray-500 border-gray-700 hover:border-blue-500 hover:text-blue-500'}`}
+                onClick={handleTerminateAndAnalyze}
+                disabled={transmissionVectors.length < 2 || cognitiveState === CognitiveLoadState.THINKING}
+                className={`px-3 py-1 text-xs font-mono border font-bold transition-all 
+                  ${cognitiveState === CognitiveLoadState.THINKING 
+                    ? 'bg-gray-800 text-gray-500 border-gray-800 animate-pulse' 
+                    : 'bg-alert-crimson text-white border-alert-crimson hover:bg-red-600'}`}
              >
-               SIMULATION MODE
+               {cognitiveState === CognitiveLoadState.THINKING ? 'GENERATING REPORT...' : 'TERMINATE & ANALYZE'}
              </button>
           </div>
 
