@@ -1,0 +1,7 @@
+{
+  "name": "The Linguistic Arbitrage Engine",
+  "description": "A high-frequency negotiation training simulator utilizing Gemini 3 Pro Thinking Mode and Live API to analyze rhetorical density and verbal velocity in real-time.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
